@@ -365,6 +365,9 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
 
     double h =  0.016; // approx. step
     //initial conditions
+    double Vi_t,Ri_t,vi_l,vi_r;
+    double L = 0.27, Rw = 0.065/2;
+
     double pos_0[6] = {x0,y0,0.2,0.4,1.0,-0.8};
     double beta_t0 = beta_i(x0,y0,theta0,v0);
     double beta_t = beta_t0;
@@ -415,7 +418,15 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             
             double pos_t[6] = {current_x,current_y,x1,y1,x3,y3};
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
-
+            if (k>0){
+                Vi_t = vi_t/Rw;
+                Ri_t = vi_t/omega_t;
+                vi_l = Vi_t*(1-L/(2*Ri_t));
+                vi_r = Vi_t*(1+L/(2*Ri_t));
+                vi_t = 0.5*Rw*(vi_l+vi_r);
+                omega_t = Rw*(vi_l+vi_r)/L;
+            }
+            
             cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
