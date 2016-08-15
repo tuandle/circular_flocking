@@ -41,16 +41,16 @@ class SpeedController {
 		double s_i(double arr[], double, double, double); // positons, theta, k, g
 		double gamma_i(double, double, double); // x, y, theta
 		void vel1_info(const geometry_msgs::Twist&);
-		void vel3_info(const geometry_msgs::Twist&);
+		void vel2_info(const geometry_msgs::Twist&);
 		double u_tf(double arr[], double, double, double arr_v[], double, double, double); // position,theta,v_neighbor,psi,ki,gi
 		void Flock(double,double,double,double);
 	
 	private:	
 		ros::NodeHandle nh_;
 		ros::Publisher cmd_vel_pub_;
-		ros::Subscriber vel_irobot1,vel_irobot3;
-		tf::TransformListener listener_, listener1_, listener2_, listener3_;
-		double pose_x, pose_y, pose_theta, v_n;
+		ros::Subscriber vel_irobot1,vel_irobot2,vel_irobot3;
+		tf::TransformListener listener_, listener1_, listener2_, listener3_, vl1_, vl2_;
+		double pose_x, pose_y, pose_theta;
 		double vel_neighbor[2];
 
 };

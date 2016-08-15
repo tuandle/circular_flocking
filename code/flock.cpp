@@ -10,7 +10,7 @@
 #include <SpeedController/SpeedController.h>
 
 int main(int argc, char** argv){
-	ros::init(argc,argv,"irobot2_control");
+	ros::init(argc,argv,"irobot3_control");
 	ros::NodeHandle nh;
 	SpeedController flocking(nh);
 	/*
@@ -38,5 +38,5 @@ int main(int argc, char** argv){
 		rate.sleep();
 	}
 	*/
-	flocking.Flock(-1,-0.6,2,0);
+	flocking.Flock(1,-0.8,0.2,0);
 }
