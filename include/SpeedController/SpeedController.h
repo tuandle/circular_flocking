@@ -7,6 +7,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <tf/LinearMath/Quaternion.h>
+#include <tf/tf.h>
 #include <math.h>
 #include <geometry_msgs/Twist.h>
 #include <algorithm>
