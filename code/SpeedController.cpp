@@ -421,8 +421,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             x2 = transform2_.getOrigin().x();
             y2 = transform2_.getOrigin().y();
             
-            vel_neighbor[0] = vn_1;
-            vel_neighbor[1] = vn_2;
+            vel_neighbor[0] = vn_1.linear.x;
+            vel_neighbor[1] = vn_2.linear.x;
 
             double pos_t[6] = {current_x,current_y,x1,y1,x2,y2};
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
