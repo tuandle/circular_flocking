@@ -81,10 +81,10 @@ void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
  
     
 void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){
-    double Kp = 1, Ki = 0.01, Kd = 0.01;
-    bool init = true;
-    double SetPoint_linear = sqrt(pow(x_goal,2) + pow(y_goal,2)), SetPoint_angular = yaw_goal;
-    double Input_linear, Output_linear, Input_angular;
+    //double Kp = 1, Ki = 0.01, Kd = 0.01;
+    //bool init = true;
+    //double SetPoint_linear = sqrt(pow(x_goal,2) + pow(y_goal,2)), SetPoint_angular = yaw_goal;
+    //double Input_linear, Output_linear, Input_angular;
     double Output_angular;
  
     //PID pid_linear(&Input_linear, &Output_linear, &SetPoint_linear, Kp, Ki, Kd);
@@ -103,7 +103,7 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             current_x = transform_.getOrigin().x();
             current_y = transform_.getOrigin().y();
  
-            Input_angular = current_yaw;
+            //Input_angular = current_yaw;
  
             geometry_msgs::Twist vel_;
              
@@ -121,16 +121,8 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
              
             if (abs(distance_to_goal) > 0.1){
                 Output_angular = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                vel_.angular.z = Output_angular;
-                //cout << "Angular velocity: " << vel_.angular.z << "\n";
- 
-                //pid_linear.Compute();
-                vel_.linear.x = 0.3;
-                //vel_.linear.x = Output_linear;
-                //cout << "Linear velocity: " << vel_.linear.x << "\n";
-                //pid_angular.Compute();
-                //vel_.angular.z = Output[1];
-                 
+                vel_.angular.z = Output_angular;	//turn with this angular velocity
+                vel_.linear.x = 0.3;			//move forward with constant speed
             }
             else{
                 vel_.linear.x = 0;
@@ -358,11 +350,11 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     ros::Rate rate(1000);
-    listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));
-    listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
-    listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
-    vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
-    vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
+    listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
+    listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
+    listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
+    vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's velocity
+    vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's velocity
     tf::StampedTransform transform_, transform2_, transform3_;
     geometry_msgs::Twist vn_2, vn_3;
     //double vel_neighbor[2];
@@ -407,12 +399,12 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
             
-            listener_.lookupTransform("/world","/irobot1",  ros::Time(0), transform_);//listen to current frame
-            listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);
-            listener3_.lookupTransform("/world","/irobot3",  ros::Time(0), transform3_);
-            vl2_.lookupTwist("/world","/irobot2",  ros::Time(0),ros::Duration(0.1), vn_2);
-            vl3_.lookupTwist("/world","/irobot3",  ros::Time(0),ros::Duration(0.1), vn_3);
-            double current_roll,current_pitch,current_yaw; //get current yaw
+            listener_.lookupTransform("/world","/irobot1",  ros::Time(0), transform_);		//current pose of robot 1
+            listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);	//current pose of robot 2
+            listener3_.lookupTransform("/world","/irobot3",  ros::Time(0), transform3_);	//current pose of robot 3
+            vl2_.lookupTwist("/world","/irobot2",  ros::Time(0),ros::Duration(0.1), vn_2);	//current vel of robot 2
+            vl3_.lookupTwist("/world","/irobot3",  ros::Time(0),ros::Duration(0.1), vn_3);	//current vel of robot 3
+            double current_roll,current_pitch,current_yaw; //get current yaw of robot 1
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x2, y2, x3, y3; //get current positions
             current_x = transform_.getOrigin().x();
@@ -423,7 +415,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             y3 = transform3_.getOrigin().y();
             
             double pos_t[6] = {current_x,current_y,x2,y2,x3,y3};
-            vel_neighbor[0]=vn_2.linear.x;
+            vel_neighbor[0]=vn_2.linear.x;	//store neighbors' velocities
             vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
             if (k>0){
@@ -447,7 +439,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             beta_t = beta_i(current_x,current_y,current_yaw,vi_t); // beta at step k
             double temp_k0 = beta_k[0];
             double temp_k1 = beta_k[1];
-            beta_k[0] = beta_t;
+            beta_k[0] = beta_t;		// store beta for next k
             beta_k[1] = temp_k0;
             beta_k[2] = temp_k1; 
             if (k==1)
@@ -459,7 +451,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             u_t = u_tf(pos_t,vi_t,current_yaw,vel_neighbor,psi_t,ki,gi); // u_t at step k
             temp_k0 = u_k[0];
             temp_k1 = u_k[1];
-            u_k[0] = u_t;
+            u_k[0] = u_t;		// store u for next k
             u_k[1] = temp_k0;
             u_k[2] = temp_k1;
 
@@ -468,10 +460,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             	prev_v = vi_t;
             }
             else{
-            	vi_t = prev_v + (h/3)*(u_k[2]+4*u_k[1]+u_k[0]);
+            	vi_t = prev_v + (h/3)*(u_k[2]+4*u_k[1]+u_k[0]);			//update v
             	prev_v = vi_t;
             }
-            omega_t = -s_i(pos_t,current_yaw,ki,gi)*vi_t - sigma_func(psi_t);
+            omega_t = -s_i(pos_t,current_yaw,ki,gi)*vi_t - sigma_func(psi_t);	//update omega
                       
         }
         catch(tf::TransformException ex){
