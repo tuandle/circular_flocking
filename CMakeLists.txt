@@ -114,7 +114,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include include/SpeedController)
+include_directories(include include/SpeedController include/PID)
 include_directories(${catkin_INCLUDE_DIRS})
 
 ## Declare a C++ library
@@ -170,6 +170,10 @@ install (DIRECTORY include/${circular_flocking}/
 		DESTINATION ${circular_flocking}/include/SpeedController
 		FILES_MATCHING PATTERN "*.h"
 )
+install (DIRECTORY include/${irobot_control}/
+		DESTINATION ${irobot_control}/include/PID
+		FILES_MATCHING PATTERN "*.h"
+)
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
@@ -190,5 +194,8 @@ install (DIRECTORY include/${circular_flocking}/
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(flock code/flock.cpp code/SpeedController.cpp)
+add_executable(flock code/flock.cpp code/SpeedController.cpp code/PID.cpp)
 target_link_libraries(flock ${catkin_LIBRARIES})
+
+add_executable(get_init code/get_init.cpp code/SpeedController.cpp code/PID.cpp)
+target_link_libraries(get_init ${catkin_LIBRARIES})

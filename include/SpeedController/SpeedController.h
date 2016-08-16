@@ -18,7 +18,7 @@ class SpeedController {
 		~SpeedController();
 
 		void GetToGoal(double, double, bool);
-		//void GetToGoal_pid(double, double, double);
+		void GetToGoal_pid(double, double, double);
 		double set_pose();
 		double get_pose() const;
 		double var_theta(double, double); // var_theta_const, integral omega
