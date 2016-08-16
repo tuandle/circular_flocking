@@ -192,3 +192,6 @@ install (DIRECTORY include/${circular_flocking}/
 
 add_executable(flock code/flock.cpp code/SpeedController.cpp)
 target_link_libraries(flock ${catkin_LIBRARIES})
+
+add_executable(get_init code/get_init.cpp code/SpeedController.cpp)
+target_link_libraries(get_init ${catkin_LIBRARIES})

@@ -7,6 +7,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <tf/LinearMath/Quaternion.h>
+#include <tf/tf.h>
 #include <math.h>
 #include <geometry_msgs/Twist.h>
 #include <algorithm>
@@ -17,7 +18,7 @@ class SpeedController {
 		~SpeedController();
 
 		void GetToGoal(double, double, bool);
-		//void GetToGoal_pid(double, double, double);
+		void GetToGoal_pid(double, double, double);
 		double set_pose();
 		double get_pose() const;
 		double var_theta(double, double); // var_theta_const, integral omega
@@ -49,7 +50,7 @@ class SpeedController {
 		ros::NodeHandle nh_;
 		ros::Publisher cmd_vel_pub_;
 		ros::Subscriber vel_irobot1,vel_irobot3;
-		tf::TransformListener listener_, listener1_, listener2_, listener3_;
+		tf::TransformListener listener_, listener1_, listener2_, listener3_,vl1_, vl3_;
 		double pose_x, pose_y, pose_theta, v_n;
 		double vel_neighbor[2];
 
