@@ -26,7 +26,7 @@ SpeedController::~SpeedController(){}
 void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
      
     ros::Rate rate(10);
-    listener_.waitForTransform("/world", "/irobot2", ros::Time(0), ros::Duration(1));
+    listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
  
     while (nh_.ok()){
@@ -78,7 +78,7 @@ void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
     }
 }
  
-/*     
+    
 void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){
     double Kp = 1, Ki = 0.01, Kd = 0.01;
     bool init = true;
@@ -86,16 +86,16 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
     double Input_linear, Output_linear, Input_angular;
     double Output_angular;
  
-    PID pid_linear(&Input_linear, &Output_linear, &SetPoint_linear, Kp, Ki, Kd);
-    pid_linear.SetOutputLimit(0,0.5);
+    //PID pid_linear(&Input_linear, &Output_linear, &SetPoint_linear, Kp, Ki, Kd);
+    //pid_linear.SetOutputLimit(0,0.5);
      
     ros::Rate rate(100);
-    listener_.waitForTransform("/world", "/irobot2", ros::Time(0), ros::Duration(1));
+    listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
      
     while (nh_.ok()){
         try{
-            listener_.lookupTransform("/world", "/irobot2", ros::Time(0), transform_);//listen to current frame
+            listener_.lookupTransform("/world", "/irobot3", ros::Time(0), transform_);//listen to current frame
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x,current_y; //get current positions
@@ -119,20 +119,20 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             ROS_INFO_STREAM("Diff in yaw: " << diff_yaw);
              
             if (abs(distance_to_goal) > 0.1){
-                Output_angular = 10*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                Output_angular = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
                 vel_.angular.z = Output_angular;
                 cout << "Angular velocity: " << vel_.angular.z << "\n";
  
-                pid_linear.Compute();
-                //vel_.linear.x = 0.3;
-                vel_.linear.x = Output_linear;
+                //pid_linear.Compute();
+                vel_.linear.x = 0.2;
+                //vel_.linear.x = Output_linear;
                 cout << "Linear velocity: " << vel_.linear.x << "\n";
                 //pid_angular.Compute();
                 //vel_.angular.z = Output[1];
                  
             }
             else{
-                //vel_.linear.x = 0;
+                vel_.linear.x = 0;
                 if (abs(diff_yaw) < 0.01){
                     vel_.angular.z = 0;
                 }
@@ -148,7 +148,7 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
         rate.sleep();
     }
 }
-*/  
+ 
 double SpeedController::omega(double x, double y, double theta, double v){
     double r = sqrt(pow(x,2)+pow(y,2));
     return ((x*sin(theta) - y*cos(theta)) * v / pow(r,2)); 
@@ -180,7 +180,7 @@ double SpeedController::tau(double x, double y, double theta, double psi_t, doub
  
 void SpeedController::Move_Han(double x0, double y0, double theta0, double w0, double v0){
     ros::Rate rate(1000);
-    listener_.waitForTransform("/irobot3", "/world", ros::Time(0), ros::Duration(1));
+    listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
 
     double dt =  0.016; // time step
@@ -211,7 +211,7 @@ void SpeedController::Move_Han(double x0, double y0, double theta0, double w0, d
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
             
-            listener_.lookupTransform( "/irobot3", "/world", ros::Time(0), transform_);//listen to current frame
+            listener_.lookupTransform( "/world","/irobot3",  ros::Time(0), transform_);//listen to current frame
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x,current_y; //get current positions
@@ -357,11 +357,11 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     ros::Rate rate(1000);
-    listener_.waitForTransform("/irobot3", "/world", ros::Time(0), ros::Duration(1));
-    listener1_.waitForTransform("/irobot1", "/world", ros::Time(0), ros::Duration(1));
-    listener2_.waitForTransform("/irobot2", "/world", ros::Time(0), ros::Duration(1));
-    vl1_.waitForTransform("/irobot1", "/world", ros::Time(0), ros::Duration(1));
-    vl2_.waitForTransform("/irobot2", "/world", ros::Time(0), ros::Duration(1));
+    listener_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
+    listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
+    vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_, transform1_, transform2_;
     
     //double vel_neighbor[2];
@@ -406,11 +406,11 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
             
-            listener_.lookupTransform("/irobot3", "/world", ros::Time(0), transform_);//listen to current frame
-            listener1_.lookupTransform("/irobot1", "/world", ros::Time(0), transform1_);
-            listener2_.lookupTransform("/irobot2", "/world", ros::Time(0), transform2_);
-            vl1_.lookupTwist("/irobot1", "/world", ros::Time(0), ros::Duration(0.1),vn_1);
-            vl2_.lookupTwist("/irobot2", "/world", ros::Time(0), ros::Duration(0.1),vn_2);
+            listener_.lookupTransform("/world","/irobot3",  ros::Time(0), transform_);//listen to current frame
+            listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);
+            listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);
+            vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
+            vl2_.lookupTwist("/world","/irobot2",  ros::Time(0), ros::Duration(0.1),vn_2);
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x1, y1, x2, y2; //get current positions
