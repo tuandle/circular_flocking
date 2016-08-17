@@ -107,21 +107,30 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             ROS_INFO_STREAM("Current yaw: " << current_yaw);
             ROS_INFO_STREAM("Diff in yaw: " << diff_yaw);
              
-            if (abs(distance_to_goal) > 0.01){
-                vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                cout << "Angular velocity: " << vel_.angular.z << "\n";              
-                vel_.linear.x = 0.3;
-                cout << "Linear velocity: " << vel_.linear.x << "\n";               
+            vel_.angular.z = 2*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+            vel_.linear.x = 0.4;
+            if (abs(distance_to_goal) > 0.1){            
+                //vel_.angular.z = 1*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                ROS_INFO_STREAM("Still moving 1 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);  
+                cmd_vel_pub_.publish(vel_);
             }
             else{
-                vel_.linear.x = 0;
-                if (abs(diff_yaw) < 0.01)
+                if ((abs(distance_to_goal) < 0.1)&&(abs(diff_yaw) > 0.05)){
+                    vel_.linear.x = 0;
+                    //vel_.angular.z = 3*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+                    //vel_.angular.z = 2*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                    ROS_INFO_STREAM("Still moving 2 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);
+                    cmd_vel_pub_.publish(vel_);
+                }
+                else{
+                    //vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);  
+                    vel_.linear.x = 0;
                     vel_.angular.z = 0;
-                else
-                    vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                    ROS_INFO_STREAM("Stop");
+                    cmd_vel_pub_.publish(vel_);
+                }
             } 
- 
-            cmd_vel_pub_.publish(vel_); //publish velocities
+           
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
