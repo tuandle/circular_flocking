@@ -14,12 +14,12 @@
  
 using namespace std;
  
-SpeedController::SpeedController(ros::NodeHandle &nh){
+SpeedController::SpeedController(ros::NodeHandle &nh): vel_neighbor{ }, vel_neighbor_debug{ }{
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot2/cmd_vel",1000);
-    vel_neighbor[2]={ };
-    //vel_irobot1 = nh_.subscribe("/irobot1/cmd_vel",1000,&SpeedController::vel1_info,this);
-    //vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1000,&SpeedController::vel3_info,this);
+    //vel_neighbor[2]={ }; vel_neighbor_debug[2]={ };
+    vel_irobot1 = nh_.subscribe("/irobot1/cmd_vel",1000,&SpeedController::vel1_info,this);
+    vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1000,&SpeedController::vel3_info,this);
 }
  
 SpeedController::~SpeedController(){}
@@ -94,7 +94,7 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             double current_x,current_y; //get current positions
             current_x = transform_.getOrigin().x();
             current_y = transform_.getOrigin().y();
- 
+           
             geometry_msgs::Twist vel_;
              
             double distance_to_goal = pow((pow((x_goal - current_x),2)+pow((y_goal - current_y),2)),0.5); // need to move ?
@@ -330,11 +330,11 @@ double SpeedController::gamma_i(double xi, double yi, double theta_i){
 }
 
 void SpeedController::vel1_info(const geometry_msgs::Twist& vel_msg){
-	this->vel_neighbor[0]=vel_msg.linear.x;
+	this->vel_neighbor_debug[0]=vel_msg.linear.x;
 }
 
 void SpeedController::vel3_info(const geometry_msgs::Twist& vel_msg){
-	this->vel_neighbor[1]=vel_msg.linear.x;
+	this->vel_neighbor_debug[1]=vel_msg.linear.x;
 }
 
 double SpeedController::u_tf(double pos[6], double v, double theta, double v_neighbor[2], double psi_i, double ki, double gi){
@@ -474,4 +474,48 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
         ros::spinOnce();
         rate.sleep();
     }
+}
+
+void SpeedController::tf_debug(){
+    ros::Rate rate(1000);
+    listener_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
+    listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
+    vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
+
+    tf::StampedTransform transform_, transform1_, transform3_;
+    geometry_msgs::Twist vn_1, vn_3;
+
+     while (nh_.ok()){
+        try{
+            listener_.lookupTransform("/world", "/irobot2", ros::Time(0), transform_);//listen to current frame
+            listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);
+            listener3_.lookupTransform("/world","/irobot3",  ros::Time(0), transform3_);
+            vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
+            vl3_.lookupTwist("/world","/irobot3",  ros::Time(0), ros::Duration(0.1),vn_3);
+            double current_roll,current_pitch,current_yaw; //get current yaw
+            transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
+            double current_x, current_y, x1, y1, x3, y3; //get current positions
+            current_x = transform_.getOrigin().x();
+            current_y = transform_.getOrigin().y();
+            x1 = transform1_.getOrigin().x();
+            y1 = transform1_.getOrigin().y();
+            x3 = transform3_.getOrigin().x();
+            y3 = transform3_.getOrigin().y();
+            
+            double pos_t[6] = {current_x,current_y,x1,y1,x3,y3};
+            vel_neighbor[0]=vn_1.linear.x;
+            vel_neighbor[1]=vn_3.linear.x;
+
+            cout << "Robot 1: difference in vel (should be 0): " << vel_neighbor[0] - vel_neighbor_debug[0] << "\n";
+            cout << "Robot 3: difference in vel (should be 0): " << vel_neighbor[1] - vel_neighbor_debug[3] << "\n";
+        }
+        catch(tf::TransformException ex){
+            ROS_ERROR("%s",ex.what());
+            ros::Duration(0.5).sleep();
+        }
+        ros::spinOnce();
+        rate.sleep();
+    }    
 }
