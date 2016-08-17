@@ -80,16 +80,8 @@ void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
  
     
 void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){
-    double Kp = 1, Ki = 0.01, Kd = 0.01;
-    bool init = true;
-    double SetPoint_linear = sqrt(pow(x_goal,2) + pow(y_goal,2)), SetPoint_angular = yaw_goal;
-    double Input_linear, Output_linear, Input_angular;
-    double Output_angular;
- 
-    //PID pid_linear(&Input_linear, &Output_linear, &SetPoint_linear, Kp, Ki, Kd);
-    //pid_linear.SetOutputLimit(0,0.5);
-     
-    ros::Rate rate(100);
+    
+    ros::Rate rate(1000);
     listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
      
@@ -102,43 +94,40 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             current_x = transform_.getOrigin().x();
             current_y = transform_.getOrigin().y();
  
-            Input_angular = current_yaw;
- 
             geometry_msgs::Twist vel_;
              
-            double distance_to_goal = pow((pow((x_goal - current_x),2)+pow((y_goal - current_y),2)),0.5); // need to move ?
-            Input_linear = distance_to_goal;
-             
             double diff_yaw = yaw_goal - current_yaw; // need to turn?
-             
-            ROS_INFO_STREAM("Current x: " << current_x);
-            ROS_INFO_STREAM("Goal x: " << SetPoint_linear);
+            double distance_to_goal = sqrt(pow(current_x-x_goal,2)+pow(current_y-y_goal,2));    
+
+            ROS_INFO_STREAM("Current x: " << current_x << " Current y: " << current_y);
             ROS_INFO_STREAM("Distance to goal: " << distance_to_goal);
             ROS_INFO_STREAM("Yaw goal: " << yaw_goal);
             ROS_INFO_STREAM("Current yaw: " << current_yaw);
             ROS_INFO_STREAM("Diff in yaw: " << diff_yaw);
              
-            if (abs(distance_to_goal) > 0.1){
-                Output_angular = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                vel_.angular.z = Output_angular;
-                cout << "Angular velocity: " << vel_.angular.z << "\n";
- 
-                //pid_linear.Compute();
-                vel_.linear.x = 0.2;
-                //vel_.linear.x = Output_linear;
-                cout << "Linear velocity: " << vel_.linear.x << "\n";
-                //pid_angular.Compute();
-                //vel_.angular.z = Output[1];
-                 
+            vel_.angular.z = 2*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+            vel_.linear.x = 0.4;
+            if (abs(distance_to_goal) > 0.1){            
+                //vel_.angular.z = 1*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                ROS_INFO_STREAM("Still moving 1 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);  
+                cmd_vel_pub_.publish(vel_);
             }
             else{
-                vel_.linear.x = 0;
-                if (abs(diff_yaw) < 0.01){
+                if ((abs(distance_to_goal) < 0.1)&&(abs(diff_yaw) > 0.05)){
+                    vel_.linear.x = 0;
+                    //vel_.angular.z = 3*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+                    //vel_.angular.z = 2*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                    ROS_INFO_STREAM("Still moving 2 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);
+                    cmd_vel_pub_.publish(vel_);
+                }
+                else{
+                    //vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);  
+                    vel_.linear.x = 0;
                     vel_.angular.z = 0;
+                    ROS_INFO_STREAM("Stop");
+                    cmd_vel_pub_.publish(vel_);
                 }
             } 
- 
-            cmd_vel_pub_.publish(vel_); //publish velocities
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
