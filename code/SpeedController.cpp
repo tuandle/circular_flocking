@@ -14,12 +14,11 @@
  
 using namespace std;
  
-SpeedController::SpeedController(ros::NodeHandle &nh){
+SpeedController::SpeedController(ros::NodeHandle &nh):vel_neighbor{ } {
     nh_ = nh;
-    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot1/cmd_vel",1000);
-    vel_neighbor[2]={ };
-    //vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1000,&SpeedController::vel2_info,this);
-    //vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1000,&SpeedController::vel3_info,this);
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot1/cmd_vel",1000);   
+    vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1000,&SpeedController::vel2_info,this);
+    vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1000,&SpeedController::vel3_info,this);
 }
  
 SpeedController::~SpeedController(){}
@@ -81,23 +80,11 @@ void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
  
     
 void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){
-<<<<<<< HEAD
+    
     ros::Rate rate(1000);
-=======
-    //double Kp = 1, Ki = 0.01, Kd = 0.01;
-    //bool init = true;
-    //double SetPoint_linear = sqrt(pow(x_goal,2) + pow(y_goal,2)), SetPoint_angular = yaw_goal;
-    //double Input_linear, Output_linear, Input_angular;
-    double Output_angular;
- 
-    //PID pid_linear(&Input_linear, &Output_linear, &SetPoint_linear, Kp, Ki, Kd);
-    //pid_linear.SetOutputLimit(0,0.5);
-     
-    ros::Rate rate(100);
->>>>>>> ec9777ce2612120dd0b5af4ed1f6ebcc368c8bb4
     listener_.waitForTransform("/world", "/irobot1",ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
-    //double phi_d = atan((y_goal-current_y)/(x_goal-current_x));
+   
     while (nh_.ok()){
         try{
             listener_.lookupTransform("/world","/irobot1",ros::Time(0), transform_);//listen to current frame
@@ -107,11 +94,6 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             current_x = transform_.getOrigin().x();
             current_y = transform_.getOrigin().y();
  
-<<<<<<< HEAD
-=======
-            //Input_angular = current_yaw;
- 
->>>>>>> ec9777ce2612120dd0b5af4ed1f6ebcc368c8bb4
             geometry_msgs::Twist vel_;
              
             double distance_to_goal = pow((pow((x_goal - current_x),2)+pow((y_goal - current_y),2)),0.5); // need to move ?            
@@ -123,39 +105,29 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             ROS_INFO_STREAM("Current yaw: " << current_yaw);
             ROS_INFO_STREAM("Diff in yaw: " << diff_yaw);
              
-<<<<<<< HEAD
             vel_.angular.z = 2*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
             vel_.linear.x = 0.4;
             if (abs(distance_to_goal) > 0.1){            
                 //vel_.angular.z = 1*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
                 ROS_INFO_STREAM("Still moving 1 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);  
             	cmd_vel_pub_.publish(vel_);
-=======
-            if (abs(distance_to_goal) > 0.1){
-                Output_angular = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                vel_.angular.z = Output_angular;	//turn with this angular velocity
-                vel_.linear.x = 0.3;			//move forward with constant speed
->>>>>>> ec9777ce2612120dd0b5af4ed1f6ebcc368c8bb4
             }
             else{
                 if ((abs(distance_to_goal) < 0.1)&&(abs(diff_yaw) > 0.05)){
                     vel_.linear.x = 0;
-                	//vel_.angular.z = 3*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
-                	//vel_.angular.z = 2*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                	ROS_INFO_STREAM("Still moving 2 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);
-                	cmd_vel_pub_.publish(vel_);
+                    //vel_.angular.z = 3*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+                    //vel_.angular.z = 2*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
+                    ROS_INFO_STREAM("Still moving 2 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);
+                    cmd_vel_pub_.publish(vel_);
                 }
                 else{
-                	//vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);	
-            		vel_.linear.x = 0;
-            		vel_.angular.z = 0;
-            		ROS_INFO_STREAM("Stop");
-            		cmd_vel_pub_.publish(vel_);
-            	}
+                    //vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);  
+                    vel_.linear.x = 0;
+                    vel_.angular.z = 0;
+                    ROS_INFO_STREAM("Stop");
+                    cmd_vel_pub_.publish(vel_);
+                }
             } 
-				
-            //cmd_vel_pub_.publish(vel_); //publish velocities
-            
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
@@ -377,10 +349,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
-    vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's velocity
-    vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's velocity
+    //vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's velocity
+    //vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's velocity
     tf::StampedTransform transform_, transform2_, transform3_;
-    geometry_msgs::Twist vn_2, vn_3;
+    //geometry_msgs::Twist vn_2, vn_3;
     //double vel_neighbor[2];
 
     double h =  0.016; // approx. step
@@ -426,8 +398,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             listener_.lookupTransform("/world","/irobot1",  ros::Time(0), transform_);		//current pose of robot 1
             listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);	//current pose of robot 2
             listener3_.lookupTransform("/world","/irobot3",  ros::Time(0), transform3_);	//current pose of robot 3
-            vl2_.lookupTwist("/world","/irobot2",  ros::Time(0),ros::Duration(0.1), vn_2);	//current vel of robot 2
-            vl3_.lookupTwist("/world","/irobot3",  ros::Time(0),ros::Duration(0.1), vn_3);	//current vel of robot 3
+            //vl2_.lookupTwist("/world","/irobot2",  ros::Time(0),ros::Duration(0.1), vn_2);	//current vel of robot 2
+            //vl3_.lookupTwist("/world","/irobot3",  ros::Time(0),ros::Duration(0.1), vn_3);	//current vel of robot 3
             double current_roll,current_pitch,current_yaw; //get current yaw of robot 1
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x2, y2, x3, y3; //get current positions
@@ -439,8 +411,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             y3 = transform3_.getOrigin().y();
             
             double pos_t[6] = {current_x,current_y,x2,y2,x3,y3};
-            vel_neighbor[0]=vn_2.linear.x;	//store neighbors' velocities
-            vel_neighbor[1]=vn_3.linear.x;
+            //vel_neighbor[0]=vn_2.linear.x;	//store neighbors' velocities
+            //vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
             if (k>0){
                 Vi_t = vi_t/Rw;
