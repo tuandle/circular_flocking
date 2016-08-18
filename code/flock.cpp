@@ -39,4 +39,5 @@ int main(int argc, char** argv){
 	}
 	*/
 	flocking.Flock(-1,-0.6,2,0);
+	//flocking.tf_debug();
 }

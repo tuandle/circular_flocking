@@ -352,11 +352,11 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     listener_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
-    vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
-    vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
+    //vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    //vl3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
 
     tf::StampedTransform transform_, transform1_, transform3_;
-    geometry_msgs::Twist vn_1, vn_3;
+    //geometry_msgs::Twist vn_1, vn_3;
     //double vel_neighbor[2];
 
     double h =  0.016; // approx. step
@@ -376,7 +376,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     double gi = 0.3/(sqrt(1+pow(v0,2)));
     double temp_sigma =0;
     for (int i = 0; i < 2; i++){
-    	temp_sigma = temp_sigma + sigma_func(vi_t*gamma_i(x0,y0,theta0)-vel_neighbor[i]*gamma_i(pos_0[2*i+3],pos_0[2*i+4],atan(pos_0[2*i+4]/pos_0[2*i+3])));
+    	temp_sigma = temp_sigma + sigma_func(vi_t*gamma_i(x0,y0,theta0)-vel_neighbor_debug[i]*gamma_i(pos_0[2*i+3],pos_0[2*i+4],atan(pos_0[2*i+4]/pos_0[2*i+3])));
     }
     double u_t0 = -rho_i(pos_0, theta0) + (x0*sin(theta0) - y0*cos(theta0))*(sigma_func(psi_t)/pow(ri,2)) + s_i(pos_0,theta0,ki,gi)*sigma_func(psi_t) - (2/3) * gamma_i(x0,y0,theta0) * temp_sigma;
     double u_t = u_t0;
@@ -402,8 +402,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             listener_.lookupTransform("/world", "/irobot2", ros::Time(0), transform_);//listen to current frame
             listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);
             listener3_.lookupTransform("/world","/irobot3",  ros::Time(0), transform3_);
-            vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
-            vl3_.lookupTwist("/world","/irobot3",  ros::Time(0), ros::Duration(0.1),vn_3);
+            //vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
+            //vl3_.lookupTwist("/world","/irobot3",  ros::Time(0), ros::Duration(0.1),vn_3);
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x1, y1, x3, y3; //get current positions
@@ -415,9 +415,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             y3 = transform3_.getOrigin().y();
             
             double pos_t[6] = {current_x,current_y,x1,y1,x3,y3};
-            vel_neighbor[0]=vn_1.linear.x;
-            vel_neighbor[1]=vn_3.linear.x;
+            //vel_neighbor[0]=vn_1.linear.x;
+            //vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
+            /*
             if (k>0){
                 Vi_t = vi_t/Rw;
                 Ri_t = vi_t/omega_t;
@@ -426,7 +427,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
                 vi_t = 0.5*Rw*(vi_l+vi_r);
                 omega_t = Rw*(vi_l+vi_r)/L;
             }
-            
+            */
             cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
@@ -449,7 +450,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             	var_theta_t = beta_k[1] + (h/3)*(beta_k[2] + 4*beta_k[1] + beta_k[0]);
             psi_t = current_yaw - var_theta_t - M_PI/2;
 
-            u_t = u_tf(pos_t,vi_t,current_yaw,vel_neighbor,psi_t,ki,gi); // u_t at step k
+            u_t = u_tf(pos_t,vi_t,current_yaw,vel_neighbor_debug,psi_t,ki,gi); // u_t at step k
             temp_k0 = u_k[0];
             temp_k1 = u_k[1];
             u_k[0] = u_t;
@@ -508,8 +509,8 @@ void SpeedController::tf_debug(){
             vel_neighbor[0]=vn_1.linear.x;
             vel_neighbor[1]=vn_3.linear.x;
 
-            cout << "Robot 1: difference in vel (should be 0): " << vel_neighbor[0] - vel_neighbor_debug[0] << "\n";
-            cout << "Robot 3: difference in vel (should be 0): " << vel_neighbor[1] - vel_neighbor_debug[3] << "\n";
+            cout << "Robot 1: subscribe to tf_twist: " << vel_neighbor[0] << "\n";
+            cout << "Robot 1: subscribe to cmd_vel: " << vel_neighbor_debug[0] << "\n";
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
