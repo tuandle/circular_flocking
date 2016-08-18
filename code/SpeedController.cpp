@@ -13,12 +13,11 @@
  
 using namespace std;
  
-SpeedController::SpeedController(ros::NodeHandle &nh){
+SpeedController::SpeedController(ros::NodeHandle &nh):vel_neighbor{ }{
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot3/cmd_vel",1000);
-    vel_neighbor[2]={ };
-    //vel_irobot1 = nh_.subscribe("/irobot1/cmd_vel",1000,&SpeedController::vel1_info,this);
-    //vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1000,&SpeedController::vel2_info,this);
+    vel_irobot1 = nh_.subscribe("/irobot1/cmd_vel",1000,&SpeedController::vel1_info,this);
+    vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1000,&SpeedController::vel2_info,this);
 }
  
 SpeedController::~SpeedController(){}
@@ -349,12 +348,12 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     listener_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
-    vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
-    vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
+    //vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
+    //vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_, transform1_, transform2_;
     
     //double vel_neighbor[2];
-    geometry_msgs::Twist vn_1, vn_2;
+    //geometry_msgs::Twist vn_1, vn_2;
     double h =  0.016; // approx. step
     //initial conditions
     double Vi_t,Ri_t,vi_l,vi_r;
@@ -398,8 +397,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             listener_.lookupTransform("/world","/irobot3",  ros::Time(0), transform_);//listen to current frame
             listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);
             listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);
-            vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
-            vl2_.lookupTwist("/world","/irobot2",  ros::Time(0), ros::Duration(0.1),vn_2);
+            //vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
+            //vl2_.lookupTwist("/world","/irobot2",  ros::Time(0), ros::Duration(0.1),vn_2);
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x1, y1, x2, y2; //get current positions
@@ -410,8 +409,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             x2 = transform2_.getOrigin().x();
             y2 = transform2_.getOrigin().y();
             
-            vel_neighbor[0] = vn_1.linear.x;
-            vel_neighbor[1] = vn_2.linear.x;
+            //vel_neighbor[0] = vn_1.linear.x;
+            //vel_neighbor[1] = vn_2.linear.x;
 
             double pos_t[6] = {current_x,current_y,x1,y1,x2,y2};
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
