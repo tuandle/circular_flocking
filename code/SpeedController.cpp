@@ -383,7 +383,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     beta_k[0] = beta_t;
     double u_k[3];
     u_k[0]=u_t;
-    double prev_v = vi_t;
+    double prev_v;
     //control parameters
     unsigned long int k = 0; //discrete step
 
@@ -414,6 +414,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             //vel_neighbor[0]=vn_2.linear.x;	//store neighbors' velocities
             //vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
+            /*
             if (k>0){
                 Vi_t = vi_t/Rw;
                 Ri_t = vi_t/omega_t;
@@ -422,6 +423,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
                 vi_t = 0.5*Rw*(vi_l+vi_r);
                 omega_t = Rw*(vi_l+vi_r)/L;
             }
+            */
             cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
