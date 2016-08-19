@@ -296,6 +296,7 @@ double SpeedController::beta_i(double x, double y, double theta, double v){
 
 double SpeedController::rho_i(double positions[6], double theta_i){
 	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    //double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
 	double ri = r_i(positions[0],positions[1]);
 	double left = var_phi0(a1,a2,positions[0],positions[1]) * (positions[0]*cos(theta_i)+positions[1]*sin(theta_i)) / ri;
 	double temp = 0;
@@ -348,12 +349,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     listener_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
-    //vl1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
-    //vl2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_, transform1_, transform2_;
     
-    //double vel_neighbor[2];
-    //geometry_msgs::Twist vn_1, vn_2;
     double h =  0.016; // approx. step
     //initial conditions
     double Vi_t,Ri_t,vi_l,vi_r;
@@ -382,7 +379,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     beta_k[0] = beta_t;
     double u_k[3];
     u_k[0]=u_t;
-    double prev_v = vi_t;
+    double prev_v;
     //control parameters
     unsigned long int k = 0; //discrete step
 
@@ -397,8 +394,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             listener_.lookupTransform("/world","/irobot3",  ros::Time(0), transform_);//listen to current frame
             listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);
             listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);
-            //vl1_.lookupTwist("/world","/irobot1",  ros::Time(0), ros::Duration(0.1),vn_1);
-            //vl2_.lookupTwist("/world","/irobot2",  ros::Time(0), ros::Duration(0.1),vn_2);
+            
             double current_roll,current_pitch,current_yaw; //get current yaw
             transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
             double current_x, current_y, x1, y1, x2, y2; //get current positions
@@ -409,11 +405,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             x2 = transform2_.getOrigin().x();
             y2 = transform2_.getOrigin().y();
             
-            //vel_neighbor[0] = vn_1.linear.x;
-            //vel_neighbor[1] = vn_2.linear.x;
 
             double pos_t[6] = {current_x,current_y,x1,y1,x2,y2};
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
+            /*
             if (k>0){
                 Vi_t = vi_t/Rw;
                 Ri_t = vi_t/omega_t;
@@ -422,7 +417,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
                 vi_t = 0.5*Rw*(vi_l+vi_r);
                 omega_t = Rw*(vi_l+vi_r)/L;
             }
-            
+            */
             cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
