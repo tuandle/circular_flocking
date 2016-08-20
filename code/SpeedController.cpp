@@ -17,8 +17,8 @@ using namespace std;
 SpeedController::SpeedController(ros::NodeHandle &nh):vel_neighbor{ } {
     nh_ = nh;
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot1/cmd_vel",1000);   
-    vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1000,&SpeedController::vel2_info,this);
-    vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1000,&SpeedController::vel3_info,this);
+    vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1,&SpeedController::vel2_info,this);
+    vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1,&SpeedController::vel3_info,this);
 }
  
 SpeedController::~SpeedController(){}
@@ -364,7 +364,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     double beta_t0 = beta_i(x0,y0,theta0,v0);
     double beta_t = beta_t0;
     double var_theta0 = atan(y0/x0);
-    double var_theta_t = var_theta0;
+    double var_theta_t;
     double psi_t = theta0 - var_theta0 - M_PI/2; // t = 0;
     double vi_t = v0;
     double ri = r_i(x0,y0);
@@ -470,5 +470,86 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
         }
         ros::spinOnce();
         rate.sleep();
+    }
+}
+
+double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
+	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double theta_s = 0.01;
+	double temp = 0;
+	for (int i = 0; i < 2; i++){
+		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
+		double var_t = ((-(positions[0]-positions[2*i+2])*sin(theta_i)+(positions[1]-positions[2*i+3])*cos(theta_i))/var_rij)*;
+		temp = temp + var_phi1(b1,b2,positions[0],positions[1],positions[2*i+2],positions[2*i+3])*var_t*(sigma_func(theta_i-theta_s)/sqrt(1+ v*v));
+	}
+	return (-(k/3)*temp);	
+} 
+
+double SpeedController::u_linear(double positions[6], double theta_i, double v){
+	double temp = 0;
+	double k = 0.5;
+	double theta_s = 0.01;
+	double v_s = 0.01;
+	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	for (int i = 0; i<2; i++){
+		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
+		double var_t = ((positions[0]-positions[2*i+2])*cos(theta_i)+(positions[1]-positions[2*i+3])*sin(theta_i))/var_rij;
+		temp = temp + var_phi1(b1,b2,positions[0],positions[1],positions[2*i+2],positions[2*i+3])*var_t;
+	}
+	double right = sigma_func(theta_i - theta_s)*(sigma_func(v - v_s)/sqrt(1 + v*v)) - u_p_t(positions[6], theta_i, k, v);
+	return (-(1/3)*temp-right);
+}
+
+double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
+	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double theta_s = 0.01;
+	double temp = 0;
+	for (int i = 0; i < 2; i++){
+		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
+		double var_t = ((-(positions[0]-positions[2*i+2])*sin(theta_i)+(positions[1]-positions[2*i+3])*cos(theta_i))/var_rij)*;
+		temp = temp + var_phi1(b1,b2,positions[0],positions[1],positions[2*i+2],positions[2*i+3])*var_t*(v/sqrt(1+ v*v));
+	}
+	return ((k/3)*temp);	
+} 
+
+double SpeedController::w_t(double positions[6], double v, double theta_i){
+	double v_s = 0.01;
+	double theta_s = 0.01;
+	double k = 0.5;
+	double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions[6], theta_i, k, v);
+	return right;
+}
+
+void SpeedController::linear_flock(double x0, double y0, double theta0, double v0){
+	ros::Rate rate(1000);
+    listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
+    listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
+    listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
+    tf::StampedTransform transform_, transform2_, transform3_;
+
+ 	double dt =  0.016; // time step
+ 	double k = 0.5;
+    //initial conditions
+    double v_t = v0;
+    while (nh_.ok()){
+    	try{
+    		listener_.lookupTransform( "/world","/irobot1", ros::Time(0), transform_);//listen to current frame
+            double current_roll,current_pitch,current_yaw; //get current yaw
+            transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
+            double current_x,current_y; //get current positions
+            current_x = transform_.getOrigin().x();
+            current_y = transform_.getOrigin().y();
+            
+            cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
+            geometry_msgs::Twist vel_;  
+            vel_.linear.x = v_t;
+            vel_.angular.z = tt;
+            cmd_vel_pub_.publish(vel_); //publish velocities
+
+            
+    	}
+    	catch(){
+
+    	}
     }
 }
