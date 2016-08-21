@@ -522,7 +522,8 @@ void SpeedController::tf_debug(){
 }
 
 double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
-    double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     double theta_s = 0.1;
     double temp = 0;
     for (int i = 0; i < 2; i++){
@@ -538,7 +539,8 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
     double k = 0.5;
     double theta_s = 0.1;
     double v_s = 0.1;
-    double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     for (int i = 0; i<2; i++){
         double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
         double var_t = ((positions[0]-positions[2*i+2])*cos(theta_i)+(positions[1]-positions[2*i+3])*sin(theta_i))/var_rij;
@@ -550,7 +552,8 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 }
 
 double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
-    double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     double theta_s = 0.1;
     double temp = 0;
     for (int i = 0; i < 2; i++){
