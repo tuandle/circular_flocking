@@ -468,7 +468,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
 }
 
 double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
-    double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     double theta_s = 0.01;
     double temp = 0;
     for (int i = 0; i < 2; i++){
@@ -496,8 +497,9 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 }
 
 double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
-    double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
-    double theta_s = 0.01;
+    //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+    double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
+    double theta_s = 0.1;
     double temp = 0;
     for (int i = 0; i < 2; i++){
         double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
@@ -508,8 +510,8 @@ double SpeedController::w_p_t(double positions[6], double theta_i, double k, dou
 } 
 
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
-    double v_s = 0.01;
-    double theta_s = 0.01;
+    double v_s = 0.1;
+    double theta_s = 0.1;
     double k = 0.5;
     double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
     return right;
@@ -560,7 +562,8 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
 
             u_t = u_linear(pos_t,current_yaw,v_t);
             v_t = v_t_i1 + (u_t + last_u)*dt*0.5;
-            w_t = w_t_i1 + (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
+            //w_t = w_t_i1 + (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
+            w_t = (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
 
             v_t_i1 = v_t;
             w_t_i1 = w_t;     
