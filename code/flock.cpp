@@ -38,7 +38,7 @@ int main(int argc, char** argv){
 		rate.sleep();
 	}
 	*/
-	flocking.Flock(-1,-0.6,2,0);
+	//flocking.Flock(-1,-0.6,2,0);
 	//flocking.tf_debug();
 	flocking.linear_flock(-1.1,-0.5,M_PI/8,0,0);
 }
