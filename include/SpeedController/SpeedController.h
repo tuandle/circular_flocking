@@ -44,8 +44,14 @@ class SpeedController {
 		double gamma_i(double, double, double); // x, y, theta
 		void vel2_info(const geometry_msgs::Twist&);
 		void vel3_info(const geometry_msgs::Twist&);
+		
 		double u_tf(double arr[], double, double, double arr_v[], double, double, double); // position,theta,v_neighbor,psi,ki,gi
+		double u_p_t(double arr[], double, double, double);
+		double u_linear(double arr[], double, double);
+		double w_p_t(double arr[], double, double, double);
+		double w_linear(double arr[], double, double);
 		void Flock(double,double,double,double);
+		void linear_flock(double, double, double, double, double);
 		
 		template<typename Method, typename F, typename Float>
 		double integrate(F f, Float a, Float b, int steps, Method m){
