@@ -577,7 +577,7 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
     tf::StampedTransform transform_, transform1_, transform3_;
 
     double dt =  0.016; // time step
-    double pos_0[6] = {x0,y0,-1,-0.6,1,-0.8}; // initial positions
+    double pos_0[6] = {x0,y0,-1.5,-1,-0.8,-1.2}; // initial positions
     //initial conditions
     double u_t = u_linear(pos_0,theta0,v0);
     double v_t = v0 + u_t;

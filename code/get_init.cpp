@@ -20,8 +20,8 @@ int main(int argc, char** argv){
 	//End of initializing ROS
 
 
-	move.GetToGoal_pid(-1,-0.6,2);
-
+	//move.GetToGoal_pid(-1,-0.6,2);
+	move.GetToGoal_pid(-1.1,-0.5,M_PI/8);
 	
 	return 0;
 }
