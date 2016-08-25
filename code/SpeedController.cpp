@@ -475,7 +475,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
 double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
-	double theta_s = 0.1;
+	double theta_s = M_PI/8;
 	double temp = 0;
 	for (int i = 0; i < 2; i++){
 		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
@@ -488,8 +488,8 @@ double SpeedController::u_p_t(double positions[6], double theta_i, double k, dou
 double SpeedController::u_linear(double positions[6], double theta_i, double v){
 	double temp = 0;
 	double k = 0.5;
-	double theta_s = 0.1;
-	double v_s = 0.1;
+	double theta_s = M_PI/8;
+	double v_s = 0.3;
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
 	for (int i = 0; i<2; i++){
@@ -505,7 +505,7 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
-	double theta_s = 0.1;
+	double theta_s = M_PI/8;
 	double temp = 0;
 	for (int i = 0; i < 2; i++){
 		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
@@ -516,8 +516,8 @@ double SpeedController::w_p_t(double positions[6], double theta_i, double k, dou
 } 
 
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
-	double v_s = 0.1;
-	double theta_s = 0.1;
+	double v_s = 0.3;
+	double theta_s = M_PI/8;
 	double k = 0.5;
 	double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
 	return right;
@@ -531,7 +531,7 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
     tf::StampedTransform transform_, transform2_, transform3_;
 
  	double dt =  0.016; // time step
- 	double pos_0[6] = {x0,y0,-1.1,-0.5,-0.8,-1.2}; // initial positions
+ 	double pos_0[6] = {x0,y0,-1.7,-0.5,-0.8,-1.2}; // initial positions
     //initial conditions
     double u_t = u_linear(pos_0,theta0,v0);
     double v_t = v0 + u_t;

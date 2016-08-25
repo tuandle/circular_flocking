@@ -39,5 +39,5 @@ int main(int argc, char** argv){
 	}
 	*/
 	//flocking.Flock(0.2,0.4,3,0);
-	flocking.linear_flock(-1.5,-1,M_PI/8,0,0);
+	flocking.linear_flock(-1.5,-1.0,3,0,0);
 }
