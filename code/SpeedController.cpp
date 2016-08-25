@@ -346,13 +346,13 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 }
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
-    ros::Rate rate(1000);
+    ros::Rate rate(200);
     listener_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_, transform1_, transform2_;
     
-    double h =  0.016; // approx. step
+    double h =  2.5e-7; // approx. step
     //initial conditions
     double Vi_t,Ri_t,vi_l,vi_r;
     double L = 0.27, Rw = 0.065/2;
@@ -389,8 +389,8 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //end of control parameters
     ofstream fout;
     double t_start = ros::Time::now().toSec(); // starting time
-    fout.open("test_circular_2_");
-    fout << "linear velocities vi_t" << " " << "Angular velocities omega_t" <<"\n" ;
+    fout.open("test_circular_3_");
+    fout<< "Time" << " " << "linear velocities vi_t " << " " << "Angular velocities omega_t" <<"\n" ;
 
     while (nh_.ok()){
         try{
@@ -462,7 +462,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             	prev_v = vi_t;
             }
             omega_t = -s_i(pos_t,current_yaw,ki,gi)*vi_t - sigma_func(psi_t);
-                      
+            
+            double t_end = ros::Time::now().toSec();
+            if ((t_end - t_start) >= 30)
+                fout.close();           
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
