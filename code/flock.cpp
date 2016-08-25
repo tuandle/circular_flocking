@@ -38,6 +38,6 @@ int main(int argc, char** argv){
 		rate.sleep();
 	}
 	*/
-	flocking.Flock(1,-0.8,0.2,0);
-	//flocking.linear_flock(-0.8,-1.2,0.2,0,0);
+	//flocking.Flock(1,-0.8,0.2,0);
+	flocking.linear_flock(-0.8,-1.2,0.2,0,0);
 }
