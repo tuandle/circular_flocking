@@ -395,9 +395,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //A1 = 10; A2 = 3; B1 = 28; B2 = 3;
     //end of control parameters
     ofstream fout;
-    fout.open("test_circular_");
+    fout.open("test_circular_2_ ");
+    double t_start = ros::Time::now().toSec(); // starting time
     //fout << "v_ref: 0.39; ros rate: 100; ros sleep 0.1 second " <<"\n" ;
-
+    fout<< "Time" << " " << "linear velocities vi_t " << " " << "Angular velocities omega_t" <<"\n" ;
     while (nh_.ok()){
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
@@ -432,7 +433,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             }
             
             //cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
-            fout << vi_t << " " << omega_t << "\n";
+            fout << t_now << " " << vi_t <<" "<< omega_t << "\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
             vel_.angular.z = omega_t;
@@ -470,7 +471,9 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             	prev_v = vi_t;
             }
             omega_t = -s_i(pos_t,current_yaw,ki,gi)*vi_t - sigma_func(psi_t);
-                      
+            double t_end = ros::Time::now().toSec();
+            if ((t_end - t_start) >= 30)
+                fout.close();           
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
