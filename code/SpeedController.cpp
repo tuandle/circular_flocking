@@ -296,7 +296,8 @@ double SpeedController::beta_i(double x, double y, double theta, double v){
 }
 
 double SpeedController::rho_i(double positions[6], double theta_i){
-	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
 	double ri = r_i(positions[0],positions[1]);
 	double left = var_phi0(a1,a2,positions[0],positions[1]) * (positions[0]*cos(theta_i)+positions[1]*sin(theta_i)) / ri;
 	double temp = 0;
@@ -309,7 +310,8 @@ double SpeedController::rho_i(double positions[6], double theta_i){
 }
 
 double SpeedController::s_i(double positions[6], double theta_i, double ki, double gi){
-	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
 	double ri = r_i(positions[0],positions[1]);
 	double left = ki * var_phi0(a1,a2,positions[0],positions[1]) * (-positions[0]*sin(theta_i)+positions[1]*cos(theta_i)) / ri;
 	double temp = 0;
@@ -345,7 +347,7 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 }
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
-    ros::Rate rate(1000);
+    ros::Rate rate(200);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
@@ -355,7 +357,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //geometry_msgs::Twist vn_2, vn_3;
     //double vel_neighbor[2];
 
-    double h =  0.016; // approx. step
+    double h =  2.5e-7; // approx. step
     //initial conditions
     double Vi_t,Ri_t,vi_l,vi_r;
     double L = 0.27, Rw = 0.065/2;
@@ -390,7 +392,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //A1 = 3; A2 = 3; B1 = 3; B2 = 3;
     //A1 = 10; A2 = 3; B1 = 28; B2 = 3;
     //end of control parameters
-    
+    ofstream fout;
+    double t_start = ros::Time::now().toSec(); // starting time
+    fout.open("test_circular_1_");
+    fout<< "Time" << " " << "linear velocities vi_t " << " " << "Angular velocities omega_t" <<"\n" ;
     while (nh_.ok()){
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
@@ -413,7 +418,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             //vel_neighbor[0]=vn_2.linear.x;	//store neighbors' velocities
             //vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
-            /*
+            
             if (k>0){
                 Vi_t = vi_t/Rw;
                 Ri_t = vi_t/omega_t;
@@ -422,8 +427,9 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
                 vi_t = 0.5*Rw*(vi_l+vi_r);
                 omega_t = Rw*(vi_l+vi_r)/L;
             }
-            */
-            cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
+            
+            //cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
+            fout << t_now << " " << vi_t <<" "<< omega_t << "\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
             vel_.angular.z = omega_t;
@@ -461,7 +467,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             	prev_v = vi_t;
             }
             omega_t = -s_i(pos_t,current_yaw,ki,gi)*vi_t - sigma_func(psi_t);	//update omega
-                      
+            
+            double t_end = ros::Time::now().toSec();
+            if ((t_end - t_start) >= 30)
+                fout.close();          
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
