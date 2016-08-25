@@ -296,8 +296,8 @@ double SpeedController::beta_i(double x, double y, double theta, double v){
 }
 
 double SpeedController::rho_i(double positions[6], double theta_i){
-	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
-	double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
+	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	//double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
 	double ri = r_i(positions[0],positions[1]);
 	double left = var_phi0(a1,a2,positions[0],positions[1]) * (positions[0]*cos(theta_i)+positions[1]*sin(theta_i)) / ri;
 	double temp = 0;
@@ -310,8 +310,8 @@ double SpeedController::rho_i(double positions[6], double theta_i){
 }
 
 double SpeedController::s_i(double positions[6], double theta_i, double ki, double gi){
-	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
-	double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
+	double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	//double a1 = 3, a2 = 3, b1 = 3, b2 = 3;
 	double ri = r_i(positions[0],positions[1]);
 	double left = ki * var_phi0(a1,a2,positions[0],positions[1]) * (-positions[0]*sin(theta_i)+positions[1]*cos(theta_i)) / ri;
 	double temp = 0;
@@ -347,7 +347,7 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 }
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
-    ros::Rate rate(200);
+    ros::Rate rate(4e6);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
@@ -498,7 +498,7 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 	double temp = 0;
 	double k = 0.5;
 	double theta_s = M_PI/8;
-	double v_s = 0.3;
+	double v_s = 0.0;
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
 	for (int i = 0; i<2; i++){
@@ -525,7 +525,7 @@ double SpeedController::w_p_t(double positions[6], double theta_i, double k, dou
 } 
 
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
-	double v_s = 0.3;
+	double v_s = 0.0;
 	double theta_s = M_PI/8;
 	double k = 0.5;
 	double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
@@ -533,13 +533,13 @@ double SpeedController::w_linear(double positions[6], double theta_i, double v){
 }
 
 void SpeedController::linear_flock(double x0, double y0, double theta0, double v0, double w0){
-	ros::Rate rate(1000);
+	ros::Rate rate(4e6);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
     tf::StampedTransform transform_, transform2_, transform3_;
 
- 	double dt =  0.016; // time step
+ 	double dt = 2.5e-7; // time step
  	double pos_0[6] = {x0,y0,-1.7,-0.5,-0.8,-1.2}; // initial positions
     //initial conditions
     double u_t = u_linear(pos_0,theta0,v0);
@@ -547,7 +547,8 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
     double v_t_i1 = v_t;
     double w_t = w0 + w_linear(pos_0,theta0,v0);
     double w_t_i1 = w_t;
-    
+    double Vi_t,Ri_t,vi_l,vi_r,vi_t,omega_t;
+    double L = 0.27, Rw = 0.065/2;
     while (nh_.ok()){
     	try{
     		listener_.lookupTransform("/world","/irobot1",  ros::Time(0), transform_);		//current pose of robot 1
@@ -563,14 +564,19 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
             y2 = transform2_.getOrigin().y();
             x3 = transform3_.getOrigin().x();
             y3 = transform3_.getOrigin().y();
-            
+
             double pos_t[6] = {current_x,current_y,x2,y2,x3,y3};
-            
+            Vi_t = v_t/Rw;
+            Ri_t = v_t/w_t;
+            vi_l = Vi_t*(1-L/(2*Ri_t));
+            vi_r = Vi_t*(1+L/(2*Ri_t));
+            vi_t = 0.5*Rw*(vi_l+vi_r);
+            omega_t = Rw*(vi_l+vi_r)/L;
             //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
             geometry_msgs::Twist vel_;  
-            vel_.linear.x = v_t;
-            vel_.angular.z = w_t;
-            cmd_vel_pub_.publish(vel_); //publish velocities
+            vel_.linear.x = vi_t;
+            vel_.angular.z = omega_t;
+            cmd_vel_pub_.publish(vel_);
 
             double last_w = w_t;
             double last_u = u_t;
