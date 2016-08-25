@@ -348,7 +348,7 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 }
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
-    ros::Rate rate(1000);
+    ros::Rate rate(200);
     listener_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));
@@ -359,7 +359,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //geometry_msgs::Twist vn_1, vn_3;
     //double vel_neighbor[2];
 
-    double h =  0.016; // approx. step
+    double h =  2.5e-7; // approx. step
     //initial conditions
     double Vi_t,Ri_t,vi_l,vi_r;
     double L = 0.27, Rw = 0.065/2;
@@ -394,7 +394,10 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
     //A1 = 3; A2 = 3; B1 = 3; B2 = 3;
     //A1 = 10; A2 = 3; B1 = 28; B2 = 3;
     //end of control parameters
-    
+    ofstream fout;
+    fout.open("test_circular_");
+    //fout << "v_ref: 0.39; ros rate: 100; ros sleep 0.1 second " <<"\n" ;
+
     while (nh_.ok()){
         try{
             double t_now = ros::Time::now().toSec(); // integrate function to this time 
@@ -418,7 +421,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
             //vel_neighbor[0]=vn_1.linear.x;
             //vel_neighbor[1]=vn_3.linear.x;
             //vel_neighbor[2] = {vel_irobot1,vel_irobot3};
-            /*
+            
             if (k>0){
                 Vi_t = vi_t/Rw;
                 Ri_t = vi_t/omega_t;
@@ -427,8 +430,9 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
                 vi_t = 0.5*Rw*(vi_l+vi_r);
                 omega_t = Rw*(vi_l+vi_r)/L;
             }
-            */
-            cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
+            
+            //cout << "current v_t: " << vi_t << " current angular: " << omega_t <<"\n";
+            fout << vi_t << " " << omega_t << "\n";
             geometry_msgs::Twist vel_;  
             vel_.linear.x = vi_t;
             vel_.angular.z = omega_t;
@@ -524,7 +528,7 @@ void SpeedController::tf_debug(){
 double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
     //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
     double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
-    double theta_s = 0.1;
+    double theta_s = M_PI/8;
     double temp = 0;
     for (int i = 0; i < 2; i++){
         double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
@@ -537,8 +541,8 @@ double SpeedController::u_p_t(double positions[6], double theta_i, double k, dou
 double SpeedController::u_linear(double positions[6], double theta_i, double v){
     double temp = 0;
     double k = 0.5;
-    double theta_s = 0.1;
-    double v_s = 0.1;
+    double theta_s = M_PI/8;
+    double v_s = 0.3;
     //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
     double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     for (int i = 0; i<2; i++){
@@ -554,7 +558,7 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
     //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
     double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
-    double theta_s = 0.1;
+    double theta_s = M_PI/8;
     double temp = 0;
     for (int i = 0; i < 2; i++){
         double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
@@ -565,8 +569,8 @@ double SpeedController::w_p_t(double positions[6], double theta_i, double k, dou
 } 
 
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
-    double v_s = 0.1;
-    double theta_s = 0.1;
+    double v_s = 0.3;
+    double theta_s = M_PI/8;
     double k = 0.5;
     double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
     return right;
