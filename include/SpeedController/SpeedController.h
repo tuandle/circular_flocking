@@ -52,7 +52,7 @@ class SpeedController {
 		double w_linear(double arr[], double, double);
 		void Flock(double,double,double,double);
 		void linear_flock(double, double, double, double, double);
-		
+		void position_print();
 		template<typename Method, typename F, typename Float>
 		double integrate(F f, Float a, Float b, int steps, Method m){
 			double s = 0;
