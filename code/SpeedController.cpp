@@ -549,6 +549,7 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
     double w_t_i1 = w_t;
     double Vi_t,Ri_t,vi_l,vi_r,vi_t,omega_t;
     double L = 0.27, Rw = 0.065/2;
+    double k = 0;
     while (nh_.ok()){
     	try{
     		listener_.lookupTransform("/world","/irobot1",  ros::Time(0), transform_);		//current pose of robot 1
@@ -566,17 +567,24 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
             y3 = transform3_.getOrigin().y();
 
             double pos_t[6] = {current_x,current_y,x2,y2,x3,y3};
-            Vi_t = v_t/Rw;
-            Ri_t = v_t/w_t;
-            vi_l = Vi_t*(1-L/(2*Ri_t));
-            vi_r = Vi_t*(1+L/(2*Ri_t));
-            vi_t = 0.5*Rw*(vi_l+vi_r);
-            omega_t = Rw*(vi_l+vi_r)/L;
-            //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
-            geometry_msgs::Twist vel_;  
-            vel_.linear.x = vi_t;
-            vel_.angular.z = omega_t;
-            cmd_vel_pub_.publish(vel_);
+            if (k>0){
+	            Vi_t = v_t/Rw;
+	            Ri_t = v_t/w_t;
+	            vi_l = Vi_t*(1-L/(2*Ri_t));
+	            vi_r = Vi_t*(1+L/(2*Ri_t));
+	            vi_t = 0.5*Rw*(vi_l+vi_r);
+	            omega_t = Rw*(vi_l+vi_r)/L;
+	            //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
+	            geometry_msgs::Twist vel_;  
+	            vel_.linear.x = vi_t;
+	            vel_.angular.z = omega_t;
+	            cmd_vel_pub_.publish(vel_);
+            }else{
+            	geometry_msgs::Twist vel_;  
+	            vel_.linear.x = 0;
+	            vel_.angular.z = 0;
+	            cmd_vel_pub_.publish(vel_);
+            };
 
             double last_w = w_t;
             double last_u = u_t;
@@ -587,7 +595,8 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
         	w_t = (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
         	
         	v_t_i1 = v_t;
-            w_t_i1 = w_t;     
+            w_t_i1 = w_t;
+            k++;     
     	}
     	catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
