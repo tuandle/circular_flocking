@@ -21,8 +21,8 @@ int main(int argc, char** argv){
 
 
 	//move.GetToGoal_pid(-1,-0.6,2);	//circular flocking	
-	//move.GetToGoal_pid(-1.7,-0.5,2); 	//parallel flocking
-	move.GetToGoal_pid(-1.0,0.2,0.2); 	//wall
+	move.GetToGoal_pid(-1.7,-0.5,2); 	//parallel flocking
+	//move.GetToGoal_pid(-1.0,0.2,0.2); 	//wall
 	//move.position_print();
 	return 0;
 }
