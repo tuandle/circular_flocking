@@ -50,7 +50,7 @@ class SpeedController {
 		double w_p_t(double arr[], double, double, double);
 		double w_linear(double arr[], double, double);
 		void linear_flock(double, double, double, double, double);
-	
+		void position_print();
 	private:	
 		ros::NodeHandle nh_;
 		ros::Publisher cmd_vel_pub_;

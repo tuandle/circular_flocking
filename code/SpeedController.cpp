@@ -493,7 +493,7 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
     double temp = 0;
     double k = 0.5;
     double theta_s = M_PI/8;
-    double v_s = 0.3;
+    double v_s = 0;
     //double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
     double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
     for (int i = 0; i<2; i++){
@@ -520,7 +520,7 @@ double SpeedController::w_p_t(double positions[6], double theta_i, double k, dou
 } 
 
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
-    double v_s = 0.3;
+    double v_s = 0;
     double theta_s = M_PI/8;
     double k = 0.5;
     double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
@@ -528,7 +528,7 @@ double SpeedController::w_linear(double positions[6], double theta_i, double v){
 }
 
 void SpeedController::linear_flock(double x0, double y0, double theta0, double v0, double w0){
-    ros::Rate rate(4e6);
+    ros::Rate rate(1000);
     listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));   //keep track of robot 1's pose
     listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));  //keep track of robot 2's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));  //keep track of robot 3's pose
@@ -544,6 +544,7 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
     double w_t_i1 = w_t;
     double Vi_t,Ri_t,vi_l,vi_r,vi_t,omega_t;
     double L = 0.27, Rw = 0.065/2;
+    double k =0;
     while (nh_.ok()){
         try{
             listener_.lookupTransform("/world","/irobot3",  ros::Time(0), transform_);      //current pose of robot 1
@@ -561,17 +562,28 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
             y2 = transform2_.getOrigin().y();
             
             double pos_t[6] = {current_x,current_y,x1,y1,x2,y2};
-            Vi_t = v_t/Rw;
-            Ri_t = v_t/w_t;
-            vi_l = Vi_t*(1-L/(2*Ri_t));
-            vi_r = Vi_t*(1+L/(2*Ri_t));
-            vi_t = 0.5*Rw*(vi_l+vi_r);
-            omega_t = Rw*(vi_l+vi_r)/L;
-            //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
-            geometry_msgs::Twist vel_;  
-            vel_.linear.x = vi_t;
-            vel_.angular.z = omega_t;
-            cmd_vel_pub_.publish(vel_); //publish velocities
+            if (k>0){
+                /*
+                Vi_t = v_t/Rw;
+                Ri_t = v_t/w_t;
+                vi_l = Vi_t*(1-L/(2*Ri_t));
+                vi_r = Vi_t*(1+L/(2*Ri_t));
+                vi_t = 0.5*Rw*(vi_l+vi_r);
+                omega_t = Rw*(vi_l+vi_r)/L;
+                //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
+                */
+                vi_l = (2*vi_t + omega_t*L)/(2*Rw);
+                vi_r = (2*vi_t - omega_t*L)/(2*Rw);
+                geometry_msgs::Twist vel_;  
+                vel_.linear.x = vi_l;
+                vel_.linear.y = vi_r;
+                cmd_vel_pub_.publish(vel_);
+            }else{
+                geometry_msgs::Twist vel_;  
+                vel_.linear.x = 0;
+                vel_.linear.y = 0;
+                cmd_vel_pub_.publish(vel_);
+            };
 
             double last_w = w_t;
             double last_u = u_t;
@@ -579,10 +591,60 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
             u_t = u_linear(pos_t,current_yaw,v_t);
             v_t = v_t_i1 + (u_t + last_u)*dt*0.5;
             //w_t = w_t_i1 + (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
-            w_t = (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
-
+            //w_t = (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
+            w_t = w_linear(pos_t,current_yaw,v_t);
             v_t_i1 = v_t;
-            w_t_i1 = w_t;     
+            w_t_i1 = w_t;   
+            k++;  
+        }
+        catch(tf::TransformException ex){
+            ROS_ERROR("%s",ex.what());
+            ros::Duration(0.5).sleep();
+        }
+        ros::spinOnce();
+        rate.sleep();
+    }
+}
+
+void SpeedController::position_print(){
+    ros::Rate rate(1000);
+    listener_.waitForTransform("/world", "/irobot3", ros::Time(0), ros::Duration(1));   //keep track of robot 1's pose
+    listener1_.waitForTransform("/world","/irobot1",  ros::Time(0), ros::Duration(1));  //keep track of robot 2's pose
+    listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));  //keep track of robot 3's pose
+    tf::StampedTransform transform_, transform1_, transform2_;
+
+    ofstream fout;
+    double t_start = ros::Time::now().toSec(); // starting time
+    fout.open("test_position_3_");
+
+    while (nh_.ok()){
+        try{
+            listener_.lookupTransform("/world","/irobot3",  ros::Time(0), transform_);      //current pose of robot 1
+            listener1_.lookupTransform("/world","/irobot1",  ros::Time(0), transform1_);    //current pose of robot 2
+            listener2_.lookupTransform("/world","/irobot2",  ros::Time(0), transform2_);    //current pose of robot 3
+      
+            double current_roll,current_pitch,current_yaw; //get current yaw of robot 1
+            transform_.getBasis().getRPY(current_roll,current_pitch,current_yaw); 
+            double current_x, current_y, x1, y1, x2, y2; //get current positions
+            current_x = transform_.getOrigin().x();
+            current_y = transform_.getOrigin().y();
+            x1 = transform1_.getOrigin().x();
+            y1 = transform1_.getOrigin().y();
+            x2 = transform2_.getOrigin().x();
+            y2 = transform2_.getOrigin().y();
+            
+            double pos_t[6] = {current_x,current_y,x1,y1,x2,y2};
+            cout << "Current positions 3: x:" << current_x << " " <<" y:" << current_y << " " << " yaw:" << current_yaw << "\n";
+            cout << "Current positions 1: x:" << x1 << " " <<" y:" << y1 << "\n";
+            cout << "Current positions 2: x:" << x2 << " " <<" y:" << y2 << "\n";
+
+            for (int i =0; i<6; i++)
+                fout << pos_t[i] << " ";
+            fout << "\n";
+            
+            double t_end = ros::Time::now().toSec();
+            if ((t_end - t_start) >= 30)
+                fout.close();
         }
         catch(tf::TransformException ex){
             ROS_ERROR("%s",ex.what());

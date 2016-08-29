@@ -20,7 +20,7 @@ int main(int argc, char** argv){
 
 
 	//move.GetToGoal_pid(1,-0.8,0.2);
-	move.GetToGoal_pid(-0.8,-1.2,0.2);
-	
+	move.GetToGoal_pid(-0.8,-1.2,0.2);	//parallel flocking
+	//move.position_print();
 	return 0;
 }
