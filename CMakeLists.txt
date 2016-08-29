@@ -10,6 +10,7 @@ find_package(catkin REQUIRED
 	std_msgs
 	geometry_msgs
 	tf
+	message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -46,11 +47,11 @@ find_package(catkin REQUIRED
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   DIRECTORY msg
+   FILES
+   vel.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,10 +68,10 @@ find_package(catkin REQUIRED
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+   DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,7 +105,7 @@ find_package(catkin REQUIRED
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES circular_flocking
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS message_runtime std_msgs
 #  DEPENDS system_lib
 )
 
@@ -199,3 +200,9 @@ target_link_libraries(flock ${catkin_LIBRARIES})
 
 add_executable(get_init code/get_init.cpp code/SpeedController.cpp code/PID.cpp)
 target_link_libraries(get_init ${catkin_LIBRARIES})
+
+add_executable(test_msg code/test_msg.cpp)
+target_link_libraries(test_msg ${catkin_LIBRARIES})
+
+add_executable(test_sub_msg code/test_sub_msg.cpp)
+target_link_libraries(test_sub_msg ${catkin_LIBRARIES})

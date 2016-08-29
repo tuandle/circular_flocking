@@ -568,22 +568,26 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
 
             double pos_t[6] = {current_x,current_y,x2,y2,x3,y3};
             if (k>0){
-	            Vi_t = v_t/Rw;
-	            Ri_t = v_t/w_t;
-	            vi_l = Vi_t*(1-L/(2*Ri_t));
-	            vi_r = Vi_t*(1+L/(2*Ri_t));
-	            vi_t = 0.5*Rw*(vi_l+vi_r);
-	            omega_t = Rw*(vi_l+vi_r)/L;
-	            //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
-	            geometry_msgs::Twist vel_;  
-	            vel_.linear.x = vi_t;
-	            vel_.angular.z = omega_t;
-	            cmd_vel_pub_.publish(vel_);
+                /*
+                Vi_t = v_t/Rw;
+                Ri_t = v_t/w_t;
+                vi_l = Vi_t*(1-L/(2*Ri_t));
+                vi_r = Vi_t*(1+L/(2*Ri_t));
+                vi_t = 0.5*Rw*(vi_l+vi_r);
+                omega_t = Rw*(vi_l+vi_r)/L;
+                //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
+                */
+                vi_l = (2*vi_t + omega_t*L)/(2*Rw);
+                vi_r = (2*vi_t - omega_t*L)/(2*Rw);
+                geometry_msgs::Twist vel_;  
+                vel_.linear.x = vi_l;
+                vel_.linear.y = vi_r;
+                cmd_vel_pub_.publish(vel_);
             }else{
-            	geometry_msgs::Twist vel_;  
-	            vel_.linear.x = 0;
-	            vel_.angular.z = 0;
-	            cmd_vel_pub_.publish(vel_);
+                geometry_msgs::Twist vel_;  
+                vel_.linear.x = 0;
+                vel_.linear.y = 0;
+                cmd_vel_pub_.publish(vel_);
             };
 
             double last_w = w_t;
