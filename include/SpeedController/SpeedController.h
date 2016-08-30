@@ -46,9 +46,11 @@ class SpeedController {
 		void vel3_info(const geometry_msgs::Twist&);
 		
 		double u_tf(double arr[], double, double, double arr_v[], double, double, double); // position,theta,v_neighbor,psi,ki,gi
-		double u_p_t(double arr[], double, double, double);
+		//double u_p_t(double arr[], double, double, double); // 3 robots
+		double u_p_t(double arr[], double, double, double); // 2 robots
 		double u_linear(double arr[], double, double);
-		double w_p_t(double arr[], double, double, double);
+		double w_p_t(double arr[], double, double);  // 2robots
+		//double w_p_t(double arr[], double, double, double,double);// 3 robots
 		double w_linear(double arr[], double, double);
 		void Flock(double,double,double,double);
 		void linear_flock(double, double, double, double, double);
@@ -76,6 +78,6 @@ class SpeedController {
 		tf::TransformListener listener_, listener1_, listener2_, listener3_, vl2_, vl3_;
 		double pose_x, pose_y, pose_theta, vn_2, vn_3;
 		double vel_neighbor[2];
-
+		double max_speed = 500;
 };
 #endif

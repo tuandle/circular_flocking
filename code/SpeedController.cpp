@@ -16,7 +16,7 @@ using namespace std;
  
 SpeedController::SpeedController(ros::NodeHandle &nh):vel_neighbor{ } {
     nh_ = nh;
-    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot1/cmd_vel",1000);   
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/irobot1/cmd_vel",10);   
     vel_irobot2 = nh_.subscribe("/irobot2/cmd_vel",1,&SpeedController::vel2_info,this);
     vel_irobot3 = nh_.subscribe("/irobot3/cmd_vel",1,&SpeedController::vel3_info,this);
 }
@@ -79,12 +79,19 @@ void SpeedController::GetToGoal(double v_linear, double v_angular, bool done){
 }
  
     
-void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){
-    
-    ros::Rate rate(1000);
+void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goal){    
+    ros::Rate rate(10);
     listener_.waitForTransform("/world", "/irobot1",ros::Time(0), ros::Duration(1));
     tf::StampedTransform transform_;
-   
+   	
+   	double L = 0.27, Rw = 0.065/2;
+   	double vi_l, vi_r, v_angular;
+   	double v_linear = 0.2;
+
+   	ofstream fout;
+    double t_start = ros::Time::now().toSec(); // starting time
+    fout.open("/home/catkin_ws/test_rec_launch");
+
     while (nh_.ok()){
         try{
             listener_.lookupTransform("/world","/irobot1",ros::Time(0), transform_);//listen to current frame
@@ -105,11 +112,28 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
             ROS_INFO_STREAM("Current yaw: " << current_yaw);
             ROS_INFO_STREAM("Diff in yaw: " << diff_yaw);
              
-            vel_.angular.z = 2*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
-            vel_.linear.x = 0.4;
+            v_angular = 5*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+
+            vi_r = (2*v_linear + v_angular*L)/(2*Rw) * 1000;
+            vi_l = (2*v_linear - v_angular*L)/(2*Rw) * 1000;
+            if (vi_r > max_speed)
+            	vi_r = max_speed;
+            else if (vi_r < -max_speed)
+            	vi_r = -max_speed;
+
+            if (vi_l > max_speed)
+            	vi_l = max_speed;
+            else if (vi_l < -max_speed)
+            	vi_l = -max_speed;
+            //vel_.angular.z = 2*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
+            //vel_.linear.x = 0.4;
+            vel_.linear.x = vi_l;
+            vel_.linear.y = vi_r;
+            //vel_.header.stamp = ros::Time::now();
             if (abs(distance_to_goal) > 0.1){            
                 //vel_.angular.z = 1*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                ROS_INFO_STREAM("Still moving 1 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);  
+                ROS_INFO_STREAM("Still moving 1 - left wheel: " << vel_.linear.x << " right: " << vel_.linear.y);  
+            	fout << vi_l << " "  << vi_r << "\n";
             	cmd_vel_pub_.publish(vel_);
             }
             else{
@@ -117,14 +141,16 @@ void SpeedController::GetToGoal_pid(double x_goal, double y_goal, double yaw_goa
                     vel_.linear.x = 0;
                     //vel_.angular.z = 3*atan2(sin(yaw_goal-current_yaw),cos(yaw_goal-current_yaw));
                     //vel_.angular.z = 2*(atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);
-                    ROS_INFO_STREAM("Still moving 2 - linear: " << vel_.linear.x << " angular: " << vel_.angular.z);
+                    ROS_INFO_STREAM("Still moving 2 - left wheel: " << vel_.linear.x << " right: " << vel_.linear.y);
+                    fout << vi_l << " "  << vi_r << "\n";
                     cmd_vel_pub_.publish(vel_);
                 }
                 else{
                     //vel_.angular.z = (atan2((y_goal-current_y),(x_goal-current_x))-current_yaw);  
                     vel_.linear.x = 0;
-                    vel_.angular.z = 0;
+                    vel_.linear.y = 0;
                     ROS_INFO_STREAM("Stop");
+                    fout << "Stop moving" <<"\n";
                     cmd_vel_pub_.publish(vel_);
                 }
             } 
@@ -347,7 +373,7 @@ double SpeedController::u_tf(double pos[6], double v, double theta, double v_nei
 }
 
 void SpeedController::Flock(double x0, double y0, double theta0, double v0){
-    ros::Rate rate(4e6);
+    ros::Rate rate(1000);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
@@ -480,7 +506,7 @@ void SpeedController::Flock(double x0, double y0, double theta0, double v0){
         rate.sleep();
     }
 }
-
+/* 3 robots
 double SpeedController::u_p_t(double positions[6], double theta_i, double k, double v){
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
@@ -493,7 +519,21 @@ double SpeedController::u_p_t(double positions[6], double theta_i, double k, dou
 	}
 	return (-(k/3)*temp);	
 } 
+*/
+/*2 robots*/
+double SpeedController::u_p_t(double positions[6], double theta_i, double v,double v2){
+	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
+	double theta_s = M_PI/8;
+	double temp = 0;
+	
+	double var_rij = r_ij(positions[0],positions[1],positions[2],positions[3]);
+	double left = -0.5*(var_phi1(b1,b2,positions[0],positions[1],positions[2],positions[3]))*((positions[0]-positions[2])*cos(theta_i)+(positions[1]-positions[3])*sin(theta_i))/var_rij;
+	double var_t = 0.5*((-(positions[0]-positions[2])*sin(theta_i)+(positions[1]-positions[3])*cos(theta_i))/var_rij)*(sigma_func(theta_i-theta_s)/sqrt(1+ v*v))-sigma_func(v-v2);
 
+	return (left+var_t);	
+} 
+/* -- 3 robots
 double SpeedController::u_linear(double positions[6], double theta_i, double v){
 	double temp = 0;
 	double k = 0.5;
@@ -510,20 +550,35 @@ double SpeedController::u_linear(double positions[6], double theta_i, double v){
 	double right = sigma_func(theta_i - theta_s)*(sigma_func(v - v_s)/sqrt(1 + v*v)) - u_p_t(positions, theta_i, k, v);
 	return (-(1/3)*temp-right);
 }
-
+*/
+/* --3 robots
 double SpeedController::w_p_t(double positions[6], double theta_i, double k, double v){
 	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
 	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
 	double theta_s = M_PI/8;
 	double temp = 0;
-	for (int i = 0; i < 2; i++){
+	for (int i = 0; i < 3; i++){
 		double var_rij = r_ij(positions[0],positions[1],positions[2*i+2],positions[2*i+3]);
 		double var_t = ((-(positions[0]-positions[2*i+2])*sin(theta_i)+(positions[1]-positions[2*i+3])*cos(theta_i))/var_rij);
 		temp = temp + var_phi1(b1,b2,positions[0],positions[1],positions[2*i+2],positions[2*i+3])*var_t*(v/sqrt(1+ v*v));
 	}
 	return ((k/3)*temp);	
 } 
-
+*/
+/*2 robots*/
+double SpeedController::w_p_t(double positions[4], double theta_i, double v){
+	//double a1 = 10, a2 = 3, b1 = 28, b2 = 3;
+	double a1 = 0.4, a2 = 0.7, b1 = 0.7, b2 = 1.5;
+	double theta_s = M_PI/8;
+	double temp = 0;
+	
+	double var_rij = r_ij(positions[0],positions[1],positions[2],positions[3]);
+	double var_t = ((-(positions[0]-positions[2])*sin(theta_i)+(positions[1]-positions[3])*cos(theta_i))/var_rij);
+	temp = -sigma_func(theta_i-theta_s) - 0.5*(var_phi1(b1,b2,positions[0],positions[1],positions[2],positions[3])*var_t*(v/sqrt(1+ v*v)));
+	
+	return temp;	
+} 
+/*
 double SpeedController::w_linear(double positions[6], double theta_i, double v){
 	double v_s = 0.0;
 	double theta_s = M_PI/8;
@@ -531,9 +586,9 @@ double SpeedController::w_linear(double positions[6], double theta_i, double v){
 	double right = (v/sqrt(1+ v*v)) * sigma_func(v-v_s)-sigma_func(theta_i-theta_s) + w_p_t(positions, theta_i, k, v);
 	return right;
 }
-
+*/
 void SpeedController::linear_flock(double x0, double y0, double theta0, double v0, double w0){
-	ros::Rate rate(1000);
+	ros::Rate rate(10);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
@@ -542,10 +597,13 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
  	double dt = 2.5e-7; // time step
  	double pos_0[6] = {x0,y0,-1.7,-0.5,-0.8,-1.2}; // initial positions
     //initial conditions
-    double u_t = u_linear(pos_0,theta0,v0);
+    //double u_t = u_linear(pos_0,theta0,v0); // 3 robots
+    double u_t = u_p_t(pos_0,theta0,v0,0);
     double v_t = v0 + u_t;
     double v_t_i1 = v_t;
-    double w_t = w0 + w_linear(pos_0,theta0,v0);
+    //double w_t = w0 + w_linear(pos_0,theta0,v0); //3 robots
+    double w_t = w0 + w_p_t(pos_0,theta0,v0);
+
     double w_t_i1 = w_t;
     double Vi_t,Ri_t,vi_l,vi_r,vi_t,omega_t;
     double L = 0.27, Rw = 0.065/2;
@@ -577,8 +635,18 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
                 omega_t = Rw*(vi_l+vi_r)/L;
                 //cout << "current v_t: " << v_t << " current angular: " << tt <<"\n";
                 */
-                vi_l = (2*vi_t + omega_t*L)/(2*Rw);
-                vi_r = (2*vi_t - omega_t*L)/(2*Rw);
+                vi_l = (2*vi_t + omega_t*L)/(2*Rw)*1000;
+                vi_r = (2*vi_t - omega_t*L)/(2*Rw)*1000;
+                if (vi_r > max_speed)
+            		vi_r = max_speed;
+            	else if (vi_r < -max_speed)
+            		vi_r = -max_speed;
+
+            	if (vi_l > max_speed)
+            		vi_l = max_speed;
+            	else if (vi_l < -max_speed)
+            		vi_l = -max_speed;
+
                 geometry_msgs::Twist vel_;  
                 vel_.linear.x = vi_l;
                 vel_.linear.y = vi_r;
@@ -593,11 +661,13 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
             double last_w = w_t;
             double last_u = u_t;
 
-        	u_t = u_linear(pos_t,current_yaw,v_t);
+        	//u_t = u_linear(pos_t,current_yaw,v_t); // 3 robots
+        	u_t = u_p_t(pos_t,current_yaw,v_t,vel_neighbor[0]);
         	v_t = v_t_i1 + (u_t + last_u)*dt*0.5;
         	//w_t = w_t_i1 + (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
         	//w_t = (last_w + w_linear(pos_t,current_yaw,v_t))*dt*0.5;
-        	w_t = w_linear(pos_t,current_yaw,v_t);
+        	//w_t = w_linear(pos_t,current_yaw,v_t); // 3 robots
+        	w_t = w_p_t(pos_t,current_yaw,v_t); // 2 robots
 
         	v_t_i1 = v_t;
             w_t_i1 = w_t;
@@ -613,7 +683,7 @@ void SpeedController::linear_flock(double x0, double y0, double theta0, double v
 }
 
 void SpeedController::position_print(){
-	ros::Rate rate(4e6);
+	ros::Rate rate(1000);
     listener_.waitForTransform("/world", "/irobot1", ros::Time(0), ros::Duration(1));	//keep track of robot 1's pose
     listener2_.waitForTransform("/world","/irobot2",  ros::Time(0), ros::Duration(1));	//keep track of robot 2's pose
     listener3_.waitForTransform("/world","/irobot3",  ros::Time(0), ros::Duration(1));	//keep track of robot 3's pose
